@@ -1,13 +1,16 @@
-from importlib.machinery import SOURCE_SUFFIXES
-from unittest.case import DIFF_OMITTED
-from winreg import DisableReflectionKey
 import pandas as pd 
 import requests 
 from bs4 import BeautifulSoup
 import pickle
 
-# Function to parse perennial source table to a pandas dataframe 
+
+SAVE_PATH = 'data/output/'
+
+
 def get_source_table(table):
+    '''
+    Function to parse perennial source table to a pandas dataframe 
+    '''
     records = []
     columns = ['name','status','List','Last','Summary','source']
     for tr in table.findAll("tr"):
@@ -68,7 +71,6 @@ def get_source_table(table):
 wikiurl="https://en.wikipedia.org/wiki/Wikipedia:Reliable_sources/Perennial_sources" #link to the English Wiki's perennial sources list
 table_class="wikitable sortable perennial-sources jquery-tablesorter"
 response=requests.get(wikiurl)
-# print(response.status_code) # check the status
 soup = BeautifulSoup(response.text, 'html.parser')
 table=soup.find('table',{'class':"wikitable"})
 
@@ -88,3 +90,4 @@ with open('data/peerage.pkl', 'rb') as f:
 
 
 perennials_df = get_source_table(table)
+perennials_df.to_csv(SAVE_PATH+'enwiki_perennial_list.csv', index=False)
