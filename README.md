@@ -17,14 +17,14 @@ Output: creates a csv file in data/output directory, which is English perennial 
 
 
 ### 2. Collect latest versions of pages that contain links to perennial sources 
-The script uses mediawiki_wikitext_current dump to obtain the pages that reference perennial sources across all wiki_dbs
+The script uses mediawiki_wikitext_current dump to obtain the pages that reference perennial sources across all wiki_dbs.
 Function <em>collect_existing_perennials</em> in data_collection.py
 
 Output: dataframe with the following columns: wiki_db, page_id, revision_id, perennial
 
 
 ### 3. Collect item_ids for the pages and combine with the output from Step #2
-The sript uses wikidata_item_page_link dump to obtain item_id of pages 
+The sript uses wikidata_item_page_link dump to obtain item_id of pages. 
 Function <em>collect_item_ids</em> in data_collection.py
 
 Output: dataframe with the following columns: wiki_db, page_id, item_id, page_title
