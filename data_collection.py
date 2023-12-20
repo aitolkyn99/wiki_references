@@ -11,6 +11,7 @@ SAVE_PATH = 'data/output/'
 
 # data collection setup
 snapshot = '2023-02'
+snapshot_items = '2023-05-01'
 sources_list_path = SAVE_PATH+'enwiki_perennial_list.csv'
 
 def source_mappings(sources_list_path):
@@ -39,6 +40,9 @@ def find_url_inref(url, ref):
     return re.findall('[./=]{0}'.format(url.replace('.','\.')),ref)
 
 def collect_existing_perennials(source_cat_dict, source_id_dict, snapshot):
+    '''
+    Method to collect pages referencing perennial sources from mediawiki_wikitext_current dump
+    '''
     schema = T.ArrayType(T.StructType([
         T.StructField("source_id", T.IntegerType(), False),
         T.StructField("category", T.IntegerType(), False)
@@ -68,6 +72,43 @@ def collect_existing_perennials(source_cat_dict, source_id_dict, snapshot):
     df = wikitext.withColumn('perennial', getPerennialCategory(F.col('revision_text'))).drop("revision_text")
 
     return df
+
+def collect_item_ids(snapshot_items):
+    '''
+    Method to collect item_ids from wikidata_item_page_link dump
+    '''
     
-source_cat_dict, source_id_dict = source_mappings(sources_list_path)
-collect_existing_perennials(source_cat_dict, source_id_dict, snapshot).write.parquet(SAVE_PATH+'wikicurrent_perennials.parquet', mode='overwrite')
+    wikidata = spark.sql('''
+                    SELECT sq.item_id, 
+                        collect_list(sq.wiki_db ) as wiki_dbs,
+                        collect_list(sq.page_id ) as page_ids,
+                        collect_list(sq.page_title ) as page_titles
+                    FROM 
+                        ( SELECT * 
+                            FROM wmf.wikidata_item_page_link
+                            WHERE snapshot="{snapshot}" AND
+                                page_namespace=0 AND
+                                wiki_db LIKE '%wiki'
+                            SORT BY wiki_db
+                        ) sq    
+                    GROUP BY sq.item_id
+                    '''.format(snapshot=snapshot_items))
+
+    df = wikidata.withColumn('wiki_db_page_id', F.explode(F.arrays_zip("wiki_dbs","page_ids","page_titles"))).selectExpr('item_id','wiki_db_page_id.wiki_dbs as wiki_db','wiki_db_page_id.page_ids as page_id','wiki_db_page_id.page_titles as page_title')
+    return df
+
+
+def join_perennials_items():
+    source_cat_dict, source_id_dict = source_mappings(sources_list_path)
+    df1 = collect_existing_perennials(source_cat_dict, source_id_dict, snapshot)
+    df2 = collect_item_ids(snapshot_items).distinct()
+
+    col = 'perennial'
+    df = df1.join(df2, ['wiki_db','page_id']).select('wiki_db','page_id','revision_id','item_id','page_title',F.explode(col).alias('perennial')).\
+    select('wiki_db','page_id','revision_id','item_id','perennial.source_id','perennial.category').\
+    groupby('wiki_db','page_id','revision_id','item_id','source_id','category').count()
+
+    df.write.parquet(SAVE_PATH+'final_data_enperennials.parquet', mode='overwrite')
+
+join_perennials_items()
+

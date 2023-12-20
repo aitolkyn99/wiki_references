@@ -6,7 +6,7 @@ Link to the paper: https://dl.acm.org/doi/10.1145/3583780.3615254
 
 ## Data Collection
 
-### 1. Extract Perennial SOurces List from Wikipedia 
+### 1. Extract Perennial Sources List from Wikipedia 
 The script is written for English perennial sources list. If you want to use other languages, modifications may be required. 
 
 ```commandline
@@ -30,10 +30,6 @@ Output: creates a parquet file in data/output directory, which contains datafram
 
 ### 4. Join Data 
 Join data from steps #2 and #3 
-
-Output: 
-
-Further these data is joined to the output from step #2.
 
 Output: dataframe with the following columns: wiki_db, page_id, revision_id, item_id, page_title, source_id, category
 
